@@ -76,41 +76,57 @@
 <div class="container">
 
   <div class="card">
-    <h2>🔍 HS Code 통관 정보 조회</h2>
+    <h2>🔍 미국 수입 통관 정보 조회</h2>
     <div class="info-box">
-      HS Code를 입력하시면 미국 수입 관세율, FTA 적용 여부, FDA/규제 체크, 위험물 여부 등<br/>
+      제품명을 입력하시면 AI가 HS Code를 추정하고, 미국 수입 관세율·FTA·FDA/규제·위험물 여부 등<br/>
       통관 관련 주요 정보를 자동으로 조회해 드립니다.
     </div>
   </div>
 
   <div class="card">
     <h2>① 제품 정보 입력</h2>
-    <div class="row2">
-      <div class="form-group" style="flex:1.2">
-        <label>HS Code (6~10자리) <span class="req">*</span></label>
-        <div class="search-wrap">
-          <input type="text" id="hsInput" placeholder="예) 6109.10 또는 61091000" maxlength="12"
-            oninput="onHsInput(this.value)" autocomplete="off"/>
-          <div class="autocomplete-list" id="autoList" style="display:none;"></div>
-        </div>
-      </div>
-      <div class="form-group" style="flex:1">
-        <label>원산지 국가</label>
-        <select id="originCountry">
-          <option value="KR">🇰🇷 한국 (Korea)</option>
-          <option value="CN">🇨🇳 중국 (China)</option>
-          <option value="VN">🇻🇳 베트남 (Vietnam)</option>
-          <option value="JP">🇯🇵 일본 (Japan)</option>
-          <option value="TW">🇹🇼 대만 (Taiwan)</option>
-          <option value="US">🇺🇸 미국 (USA)</option>
-          <option value="OTHER">기타</option>
-        </select>
-      </div>
-    </div>
+
+    <!-- 제품명 입력 (필수) -->
     <div class="form-group">
-      <label>품목 설명 (선택)</label>
-      <input type="text" id="productDesc" placeholder="예) 면 티셔츠, 화장품 크림, 건강기능식품 등"/>
+      <label>제품명 <span class="req">*</span></label>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="productDesc" placeholder="예) 면 티셔츠, 보습 크림, 건강기능식품, 블루투스 이어폰 등" style="flex:1"/>
+        <button type="button" onclick="suggestHSCode()" id="suggestBtn"
+          style="white-space:nowrap;padding:10px 16px;background:#1a3a6b;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">
+          🤖 HS 추정
+        </button>
+      </div>
     </div>
+
+    <!-- HS Code 추정 결과 -->
+    <div id="hsSuggestions" style="display:none;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px;">🤖 AI 추정 HS Code — 해당하는 항목을 선택하세요:</div>
+      <div id="suggestionList"></div>
+    </div>
+
+    <!-- HS Code 입력 (선택/자동입력) -->
+    <div class="form-group">
+      <label>HS Code <span style="font-size:11px;color:#888;font-weight:400;">(직접 입력하거나 위에서 선택)</span></label>
+      <div class="search-wrap">
+        <input type="text" id="hsInput" placeholder="예) 6109.10 또는 61091000 (선택사항)" maxlength="12"
+          oninput="onHsInput(this.value)" autocomplete="off"/>
+        <div class="autocomplete-list" id="autoList" style="display:none;"></div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>원산지 국가</label>
+      <select id="originCountry">
+        <option value="KR">🇰🇷 한국 (Korea)</option>
+        <option value="CN">🇨🇳 중국 (China)</option>
+        <option value="VN">🇻🇳 베트남 (Vietnam)</option>
+        <option value="JP">🇯🇵 일본 (Japan)</option>
+        <option value="TW">🇹🇼 대만 (Taiwan)</option>
+        <option value="US">🇺🇸 미국 (USA)</option>
+        <option value="OTHER">기타</option>
+      </select>
+    </div>
+
     <div id="errorMsg" class="error-msg"></div>
     <button class="btn" onclick="checkHSCode()">📋 통관 정보 조회</button>
   </div>
@@ -165,6 +181,146 @@
 </footer>
 
 <script>
+// ============================================================
+// AI HS Code 추정 (제품명 기반)
+// ============================================================
+const HS_KNOWLEDGE = [
+  // 의류/섬유
+  { keywords:['티셔츠','t-shirt','tshirt','반팔','tee'], codes:[{code:'61091000',desc:'T-shirts of cotton, knitted or crocheted'},{code:'61099010',desc:'T-shirts of man-made fibers, knitted or crocheted'}] },
+  { keywords:['후드','hoodie','후드티','스웨트'], codes:[{code:'61101200',desc:'Jerseys, pullovers of cotton'},{code:'61101900',desc:'Jerseys, pullovers of other textile materials'}] },
+  { keywords:['바지','팬츠','pants','trousers','jeans','청바지','데님'], codes:[{code:'62034200',desc:"Men's trousers of cotton"},{code:'62046200',desc:"Women's trousers of cotton"}] },
+  { keywords:['드레스','원피스','dress'], codes:[{code:'62044200',desc:"Women's dresses of cotton"},{code:'62044400',desc:"Women's dresses of artificial fibers"}] },
+  { keywords:['자켓','재킷','jacket','코트','coat','아우터'], codes:[{code:'62013000',desc:"Men's overcoats of man-made fibers"},{code:'62011000',desc:"Men's overcoats of wool"}] },
+  { keywords:['양말','socks'], codes:[{code:'61151900',desc:'Hosiery of other textile materials'}] },
+  { keywords:['속옷','underwear','언더웨어','팬티','브라'], codes:[{code:'62121000',desc:'Brassieres'},{code:'62071100',desc:"Men's underpants of cotton"}] },
+  // 화장품/뷰티
+  { keywords:['화장품','크림','로션','스킨케어','moisturizer','serum','세럼','미용','뷰티','cosmetic'], codes:[{code:'33049900',desc:'Beauty/make-up preparations, skin care'},{code:'33041000',desc:'Lip make-up preparations'}] },
+  { keywords:['샴푸','shampoo','컨디셔너','헤어'], codes:[{code:'33051000',desc:'Shampoos'},{code:'33054000',desc:'Preparations for permanent waving or straightening'}] },
+  { keywords:['향수','perfume','fragrance'], codes:[{code:'33030010',desc:'Perfumes and toilet waters'}] },
+  { keywords:['립스틱','lipstick','립글로스'], codes:[{code:'33041000',desc:'Lip make-up preparations'}] },
+  { keywords:['마스크팩','마스크 시트','sheet mask'], codes:[{code:'33049900',desc:'Beauty preparations - skin care'}] },
+  { keywords:['선크림','선스크린','자외선차단','sunscreen','spf'], codes:[{code:'33049900',desc:'Sun care preparations'}] },
+  // 식품
+  { keywords:['라면','라멘','instant noodle','인스턴트 면'], codes:[{code:'19023000',desc:'Other pasta, not cooked'}] },
+  { keywords:['과자','스낵','snack','쿠키','cookie','비스킷','biscuit'], codes:[{code:'19053100',desc:'Sweet biscuits'},{code:'19059090',desc:'Other bakers wares'}] },
+  { keywords:['음료','드링크','beverage','주스','juice'], codes:[{code:'22029900',desc:'Non-alcoholic beverages'}] },
+  { keywords:['커피','coffee'], codes:[{code:'21011100',desc:'Extracts of coffee'},{code:'09011100',desc:'Coffee, not roasted'}] },
+  { keywords:['건강기능식품','supplement','비타민','vitamin','영양제'], codes:[{code:'21069098',desc:'Food preparations, NES'},{code:'30049099',desc:'Medicaments, mixed or not'}] },
+  { keywords:['김','seaweed','해조류','nori'], codes:[{code:'12122100',desc:'Seaweeds fit for human consumption'}] },
+  // 전자제품
+  { keywords:['이어폰','earphone','earbuds','에어팟','무선이어폰'], codes:[{code:'85183000',desc:'Headphones and earphones'}] },
+  { keywords:['스피커','speaker','블루투스스피커'], codes:[{code:'85182200',desc:'Multiple loudspeakers in enclosures'}] },
+  { keywords:['스마트폰','핸드폰','휴대폰','phone','smartphone'], codes:[{code:'85171300',desc:'Smartphones'}] },
+  { keywords:['노트북','laptop','컴퓨터','computer'], codes:[{code:'84713000',desc:'Portable digital automatic data processing machines'}] },
+  { keywords:['충전기','charger','어댑터','adapter'], codes:[{code:'85044030',desc:'Power supplies for ADP machines'}] },
+  { keywords:['케이블','cable','usb','hdmi'], codes:[{code:'85444290',desc:'Electric conductors, fitted with connectors'}] },
+  { keywords:['스마트워치','smartwatch','애플워치','갤럭시워치'], codes:[{code:'91021200',desc:'Wrist-watches, with automatic winding'}] },
+  { keywords:['카메라','camera'], codes:[{code:'90065900',desc:'Cameras for photographic film'}] },
+  // 가구/홈
+  { keywords:['의자','chair','소파','sofa'], codes:[{code:'94013800',desc:'Seats of other materials'},{code:'94016100',desc:'Upholstered seats of wood'}] },
+  { keywords:['책상','테이블','table','desk'], codes:[{code:'94035000',desc:'Wooden furniture of a kind used in the bedroom'}] },
+  { keywords:['침대','bed','매트리스','mattress'], codes:[{code:'94016100',desc:'Seats/beds of wood'},{code:'94040000',desc:'Mattress supports'}] },
+  { keywords:['조명','lamp','전구','led'], codes:[{code:'94054000',desc:'Other electric lamps and lighting fittings'}] },
+  // 완구/스포츠
+  { keywords:['장난감','toy','완구','레고','블록'], codes:[{code:'95030000',desc:'Tricycles, scooters, toy dolls'}] },
+  { keywords:['게임','gaming','controller','컨트롤러'], codes:[{code:'95045010',desc:'Video games of a kind used with TV receivers'}] },
+  { keywords:['운동화','스니커즈','sneakers','shoes','신발'], codes:[{code:'64041100',desc:'Sports footwear with outer soles of rubber/plastics'}] },
+  { keywords:['가방','bag','백팩','backpack','핸드백'], codes:[{code:'42022200',desc:'Handbags with outer surface of textile materials'},{code:'42029200',desc:'Cases with outer surface of textile materials'}] },
+  // 기타
+  { keywords:['안경','glasses','선글라스','sunglasses'], codes:[{code:'90041000',desc:'Sunglasses'},{code:'90049000',desc:'Spectacles, corrective'}] },
+  { keywords:['시계','watch','손목시계'], codes:[{code:'91021200',desc:'Wrist-watches, with automatic winding'}] },
+  { keywords:['향초','candle','캔들'], codes:[{code:'34060000',desc:'Candles, tapers and the like'}] },
+  { keywords:['주방용품','키친','kitchen','냄비','팬','cookware'], codes:[{code:'73239300',desc:'Kitchen/table articles of stainless steel'}] },
+];
+
+async function suggestHSCode() {
+  const product = document.getElementById('productDesc').value.trim();
+  const errEl = document.getElementById('errorMsg');
+  errEl.style.display = 'none';
+
+  if (!product) {
+    errEl.textContent = '제품명을 먼저 입력해 주세요.';
+    errEl.style.display = 'block'; return;
+  }
+
+  const btn = document.getElementById('suggestBtn');
+  btn.textContent = '⏳ 추정 중...';
+  btn.disabled = true;
+
+  const productLower = product.toLowerCase();
+  let matched = [];
+
+  // 키워드 매칭
+  for (const item of HS_KNOWLEDGE) {
+    for (const kw of item.keywords) {
+      if (productLower.includes(kw.toLowerCase())) {
+        matched = matched.concat(item.codes.map(c => ({...c, matchedKw: kw})));
+        break;
+      }
+    }
+  }
+
+  // USITC API로 추가 검색
+  try {
+    const initRes = await fetch(`${USITC_BASE}/tariff/currentTariffLookup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ searchTerm: product, tariffYear: '2025' })
+    });
+    const cookie = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+    if (cookie) xsrfToken = cookie[1];
+
+    if (initRes.ok) {
+      const data = await initRes.json();
+      if (data.list && data.list.length) {
+        const apiResults = data.list.slice(0, 4).map(i => ({code: i.code, desc: i.desc, fromAPI: true}));
+        // 중복 제거
+        apiResults.forEach(r => {
+          if (!matched.find(m => m.code === r.code)) matched.unshift(r);
+        });
+      }
+    }
+  } catch(e) {}
+
+  btn.textContent = '🤖 HS 추정';
+  btn.disabled = false;
+
+  if (!matched.length) {
+    errEl.textContent = '제품명으로 HS Code를 추정하기 어렵습니다. HS Code를 직접 입력해 주세요.';
+    errEl.style.display = 'block';
+    document.getElementById('hsSuggestions').style.display = 'none';
+    return;
+  }
+
+  // 중복 제거 및 최대 6개
+  const unique = matched.filter((v,i,a) => a.findIndex(t=>t.code===v.code)===i).slice(0,6);
+
+  document.getElementById('suggestionList').innerHTML = unique.map(item => `
+    <div onclick="selectSuggestion('${item.code}','${item.desc.replace(/'/g,"\\'")}')"
+      style="padding:10px 14px;border:1.5px solid #d0d8e4;border-radius:8px;margin-bottom:6px;cursor:pointer;transition:all 0.15s;background:#fafbfc;"
+      onmouseover="this.style.borderColor='#1a3a6b';this.style.background='#f0f4fa'"
+      onmouseout="this.style.borderColor='#d0d8e4';this.style.background='#fafbfc'">
+      <span style="font-weight:700;color:#1a3a6b;font-size:14px;">${formatHTS(item.code)}</span>
+      ${item.fromAPI ? '<span style="font-size:11px;background:#e3f2fd;color:#1565c0;padding:1px 6px;border-radius:8px;margin-left:6px;">USITC</span>' : '<span style="font-size:11px;background:#f3e5f5;color:#6a1b9a;padding:1px 6px;border-radius:8px;margin-left:6px;">AI</span>'}
+      <div style="font-size:12px;color:#666;margin-top:3px;">${item.desc}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('hsSuggestions').style.display = 'block';
+}
+
+function selectSuggestion(code, desc) {
+  document.getElementById('hsInput').value = formatHTS(code);
+  // 선택된 항목 하이라이트
+  document.querySelectorAll('#suggestionList > div').forEach(el => {
+    el.style.borderColor = '#d0d8e4';
+    el.style.background = '#fafbfc';
+  });
+  event.currentTarget.style.borderColor = '#1a3a6b';
+  event.currentTarget.style.background = '#e8eef6';
+}
+
 // ============================================================
 // USITC API 설정
 // ============================================================
@@ -261,12 +417,25 @@ document.addEventListener('click', e => {
 // ============================================================
 async function checkHSCode() {
   const rawInput = document.getElementById('hsInput').value.trim();
+  const productDesc = document.getElementById('productDesc').value.trim();
   const country = document.getElementById('originCountry').value;
   const errEl = document.getElementById('errorMsg');
   errEl.style.display = 'none';
 
-  const htsClean = rawInput.replace(/[.\-\s]/g, '');
+  // 제품명은 필수
+  if (!productDesc) {
+    errEl.textContent = '제품명을 입력해 주세요.';
+    errEl.style.display = 'block'; return;
+  }
+
+  // HS Code가 없으면 자동으로 추정 후 조회
+  let htsClean = rawInput.replace(/[.\-\s]/g, '');
   if (htsClean.length < 6) {
+    // HS Code 없이 제품명만으로 먼저 추정 시도
+    if (!rawInput) {
+      errEl.textContent = 'HS Code를 입력하거나, 위의 "🤖 HS 추정" 버튼으로 코드를 먼저 선택해 주세요.';
+      errEl.style.display = 'block'; return;
+    }
     errEl.textContent = 'HS Code를 최소 6자리 이상 입력해 주세요.';
     errEl.style.display = 'block'; return;
   }

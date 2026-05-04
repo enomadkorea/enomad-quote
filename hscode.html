@@ -265,7 +265,7 @@ async function suggestHSCode() {
     const initRes = await fetch(`${USITC_BASE}/tariff/currentTariffLookup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
+      
       body: JSON.stringify({ searchTerm: product, tariffYear: '2025' })
     });
     const cookie = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
@@ -337,7 +337,7 @@ async function initSession() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ searchTerm: 'test', tariffYear: '2025' }),
-      credentials: 'include',
+      
       redirect: 'follow'
     });
     const setCookie = res.headers.get('set-cookie') || '';
@@ -368,7 +368,7 @@ async function searchHTS(term) {
     const res = await fetch(`${USITC_BASE}/tariff/currentTariffLookup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': xsrfToken },
-      credentials: 'include',
+      
       body: JSON.stringify({ searchTerm: term, tariffYear: '2025' })
     });
     if (!res.ok) throw new Error();
@@ -449,7 +449,7 @@ async function checkHSCode() {
     const initRes = await fetch(`${USITC_BASE}/tariff/currentTariffLookup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
+      
       body: JSON.stringify({ searchTerm: hts8, tariffYear: '2025' })
     });
     const cookie = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
@@ -458,7 +458,7 @@ async function checkHSCode() {
     // 상세 관세 조회
     const detailRes = await fetch(`${USITC_BASE}/tariff/currentTariffDetails?year=2025&hts8=${hts8}`, {
       headers: { 'X-XSRF-TOKEN': xsrfToken },
-      credentials: 'include'
+      
     });
     if (!detailRes.ok) throw new Error('HTS 코드를 찾을 수 없습니다. 코드를 확인해 주세요.');
     const detail = await detailRes.json();

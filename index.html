@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ENOMAD 물류 견적 문의</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      background: #f5f7fa;
+      color: #222;
+      min-height: 100vh;
+    }
+    header {
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 18px 0;
+      text-align: center;
+    }
+    header img { height: 56px; }
+    .subtitle {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #888;
+      letter-spacing: 0.03em;
+    }
+    .container {
+      max-width: 680px;
+      margin: 36px auto 60px;
+      padding: 0 16px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      padding: 32px 36px;
+      margin-bottom: 24px;
+    }
+    .card h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a3a6b;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e8eef6;
+    }
+    .form-group {
+      margin-bottom: 18px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 6px;
+    }
+    label span.req { color: #e53935; margin-left: 3px; }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d0d8e4;
+      border-radius: 7px;
+      font-size: 14px;
+      background: #fafbfc;
+      transition: border 0.2s;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: #1a3a6b;
+      background: #fff;
+    }
+    .row2 { display: flex; gap: 14px; }
+    .row2 .form-group { flex: 1; }
+    .service-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .service-options label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 400;
+      cursor: pointer;
+      padding: 8px 14px;
+      border: 1.5px solid #d0d8e4;
+      border-radius: 20px;
+      font-size: 13px;
+      background: #fafbfc;
+      transition: all 0.18s;
+      margin-bottom: 0;
+    }
+    .service-options input[type=checkbox] {
+      width: auto;
+      accent-color: #1a3a6b;
+    }
+    .service-options label:has(input:checked) {
+      border-color: #1a3a6b;
+      background: #e8eef6;
+      color: #1a3a6b;
+      font-weight: 600;
+    }
+
+    /* 견적 결과 영역 */
+    #quote-result {
+      display: none;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      padding: 32px 36px;
+      margin-bottom: 24px;
+    }
+    #quote-result h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a3a6b;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e8eef6;
+    }
+    .quote-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    .quote-table th {
+      background: #f0f4fa;
+      color: #1a3a6b;
+      font-weight: 600;
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #dde4f0;
+    }
+    .quote-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .quote-table tr.total-row td {
+      font-weight: 700;
+      background: #f8faff;
+      color: #1a3a6b;
+      font-size: 15px;
+    }
+    .quote-note {
+      font-size: 12px;
+      color: #888;
+      line-height: 1.7;
+      margin-top: 8px;
+    }
+    .btn-wrap {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      flex: 1;
+      min-width: 120px;
+      padding: 13px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.18s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary {
+      background: #1a3a6b;
+      color: #fff;
+    }
+    .btn-primary:hover { background: #122b52; }
+    .btn-secondary {
+      background: #e8eef6;
+      color: #1a3a6b;
+    }
+    .btn-secondary:hover { background: #d4dff0; }
+    .btn-outline {
+      background: #fff;
+      color: #1a3a6b;
+      border: 1.5px solid #1a3a6b;
+    }
+    .btn-outline:hover { background: #f0f4fa; }
+
+    .info-box {
+      background: #f0f4fa;
+      border-left: 4px solid #1a3a6b;
+      border-radius: 0 8px 8px 0;
+      padding: 14px 16px;
+      font-size: 13px;
+      color: #444;
+      line-height: 1.7;
+      margin-top: 6px;
+    }
+    .success-msg {
+      display: none;
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .success-msg .icon { font-size: 48px; margin-bottom: 12px; }
+    .success-msg h3 { font-size: 20px; color: #1a3a6b; margin-bottom: 8px; }
+    .success-msg p { color: #666; font-size: 14px; }
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: #aaa;
+      padding: 24px 0 40px;
+    }
+    @media (max-width: 520px) {
+      .card, #quote-result { padding: 22px 16px; }
+      .row2 { flex-direction: column; gap: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="logo.png" alt="ENOMAD Logo" />
+  <div class="subtitle">ENOMAD CO., LTD. &nbsp;|&nbsp; 해외 물류 파트너</div>
+</header>
+
+<div class="container">
+
+  <!-- 안내문 -->
+  <div class="card">
+    <h2>📦 물류 견적 문의</h2>
+    <div class="info-box">
+      아래 양식을 작성해 주시면 <strong>이노마드</strong>에서 정확한 견적을 안내해 드립니다.<br/>
+      현재 제공되는 서비스: 한국/중국 → 미국 LAX 항공·해상 운임, CA 3PL 창고 서비스
+    </div>
+  </div>
+
+  <form id="quoteForm">
+
+    <!-- 1. 고객 정보 -->
+    <div class="card">
+      <h2>① 고객 정보</h2>
+      <div class="row2">
+        <div class="form-group">
+          <label>회사명 <span class="req">*</span></label>
+          <input type="text" id="company" placeholder="예) (주)코리아무역" required />
+        </div>
+        <div class="form-group">
+          <label>담당자명 <span class="req">*</span></label>
+          <input type="text" id="contact" placeholder="예) 홍길동" required />
+        </div>
+      </div>
+      <div class="row2">
+        <div class="form-group">
+          <label>연락처 <span class="req">*</span></label>
+          <input type="tel" id="phone" placeholder="예) 010-1234-5678" required />
+        </div>
+        <div class="form-group">
+          <label>이메일 <span class="req">*</span></label>
+          <input type="email" id="email" placeholder="예) name@company.com" required />
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. 서비스 선택 -->
+    <div class="card">
+      <h2>② 서비스 선택 <span class="req">*</span></h2>
+      <div class="service-options" id="serviceOptions">
+        <label><input type="checkbox" value="air_korea" onchange="updateQuoteForm()"> 항공 (한국 → LAX)</label>
+        <label><input type="checkbox" value="air_china" onchange="updateQuoteForm()"> 항공 (중국 → LAX)</label>
+        <label><input type="checkbox" value="ocean_korea" onchange="updateQuoteForm()"> 해상 LCL (한국 → LAX)</label>
+        <label><input type="checkbox" value="3pl_in" onchange="updateQuoteForm()"> 3PL 입고 (CA 창고)</label>
+        <label><input type="checkbox" value="3pl_out" onchange="updateQuoteForm()"> 3PL 출고 (CA 창고)</label>
+        <label><input type="checkbox" value="3pl_storage" onchange="updateQuoteForm()"> 창고 보관</label>
+        <label><input type="checkbox" value="3pl_label" onchange="updateQuoteForm()"> 라벨링 서비스</label>
+      </div>
+    </div>
+
+    <!-- 3. 화물 정보 (동적) -->
+    <div id="cargoSection"></div>
+
+    <!-- 4. 추가 요청사항 -->
+    <div class="card">
+      <h2>③ 추가 요청사항</h2>
+      <div class="form-group">
+        <label>품목명 / HS Code (알고 계신 경우)</label>
+        <input type="text" id="hsCode" placeholder="예) 의류 / 6109.10" />
+      </div>
+      <div class="form-group">
+        <label>기타 문의사항</label>
+        <textarea id="remarks" rows="3" placeholder="특이사항, 요청사항을 자유롭게 입력해 주세요."></textarea>
+      </div>
+    </div>
+
+    <div class="btn-wrap">
+      <button type="button" class="btn btn-secondary" onclick="calcQuote()">💰 견적 미리보기</button>
+      <button type="submit" class="btn btn-primary">📨 견적 문의 제출</button>
+    </div>
+
+  </form>
+
+  <!-- 견적 결과 -->
+  <div id="quote-result">
+    <h2>💰 예상 견적 (참고용)</h2>
+    <table class="quote-table">
+      <thead>
+        <tr>
+          <th>서비스 항목</th>
+          <th>기준</th>
+          <th>단가</th>
+          <th>예상 금액</th>
+        </tr>
+      </thead>
+      <tbody id="quoteRows"></tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="3">합계 (참고용)</td>
+          <td id="quoteTotal">-</td>
+        </tr>
+      </tfoot>
+    </table>
+    <div class="quote-note">
+      ※ 상기 견적은 입력하신 수치 기반의 참고 금액입니다. 실제 견적은 화물 상태, 운임 변동 등에 따라 달라질 수 있습니다.<br/>
+      ※ DUTY(관세) 별도 / HS CODE별 세율 상이하오니 별도 문의 바랍니다.<br/>
+      ※ 문의 제출 후 담당자가 확인하여 정식 견적서를 발송해 드립니다.
+    </div>
+    <div class="btn-wrap">
+      <button class="btn btn-outline" onclick="document.getElementById('quote-result').style.display='none'">닫기</button>
+    </div>
+  </div>
+
+  <!-- 제출 완료 -->
+  <div id="successMsg" class="success-msg">
+    <div class="icon">✅</div>
+    <h3>견적 문의가 접수되었습니다!</h3>
+    <p>담당자가 확인 후 빠른 시일 내 연락드리겠습니다.<br/>이노마드를 이용해 주셔서 감사합니다.</p>
+  </div>
+
+</div>
+
+<footer>
+  ENOMAD CO., LTD. &nbsp;|&nbsp; sel@enomad.co.kr &nbsp;|&nbsp;
+  서울시 강서구 공항대로 247 퀸즈파크나인 B동 11층 1112호
+</footer>
+
+<script>
+// 요율표 데이터
+const RATES = {
+  air_korea: { label: '항공 (한국→LAX)', unit: 'KG', rate: 17000, currency: '₩', min: 10 },
+  air_china: { label: '항공 (중국→LAX)', unit: 'KG', rate: 17000, currency: '₩', min: 10 },
+  ocean_korea: {
+    label: '해상 LCL (한국→LAX, DDP)',
+    unit: 'CBM',
+    currency: 'USD',
+    table: [
+      [0.5, 411.9], [1, 480.3], [2, 753.9], [3, 1038.95],
+      [4, 1286.05], [5, 1539.7], [6, 1790.5], [7, 2017.64],
+      [8, 2237.95], [9, 2461.1], [10, 2646.92]
+    ]
+  },
+  '3pl_in_pallet': { label: '3PL 입고 (파렛트)', unit: 'PALLET', rate: 15, currency: 'USD' },
+  '3pl_in_box':    { label: '3PL 입고 (박스)', unit: 'BOX', rate: 3, currency: 'USD' },
+  '3pl_out_pallet':{ label: '3PL 출고 (파렛트)', unit: 'PALLET', rate: 15, currency: 'USD' },
+  '3pl_out_box':   { label: '3PL 출고 (박스)', unit: 'BOX', rate: 3, currency: 'USD' },
+  '3pl_out_b2c':   { label: '3PL 출고 B2C (1st item)', unit: 'PIECE', rate: 2.5, currency: 'USD' },
+  '3pl_storage_monthly': { label: '창고 보관 (월)', unit: 'PALLET', rate: 40, currency: 'USD' },
+  '3pl_label':     { label: '라벨링 (FBA/UPS/FedEx)', unit: 'LABEL', rate: 0.5, currency: 'USD' },
+};
+
+function getSelectedServices() {
+  return Array.from(document.querySelectorAll('#serviceOptions input:checked')).map(el => el.value);
+}
+
+function updateQuoteForm() {
+  const services = getSelectedServices();
+  let html = '';
+  const has = (s) => services.includes(s);
+
+  if (has('air_korea') || has('air_china')) {
+    html += `<div class="card"><h2>✈️ 항공 화물 정보</h2>`;
+    if (has('air_korea')) html += formGroup('air_weight_korea', '한국발 항공 중량 (KG)', 'number', '예) 50');
+    if (has('air_china')) html += formGroup('air_weight_china', '중국발 항공 중량 (KG)', 'number', '예) 30');
+    html += `</div>`;
+  }
+  if (has('ocean_korea')) {
+    html += `<div class="card"><h2>🚢 해상 화물 정보</h2>`;
+    html += formGroup('ocean_cbm', '화물 부피 (CBM)', 'number', '예) 2.5 (소수점 입력 가능)');
+    html += `</div>`;
+  }
+  if (has('3pl_in')) {
+    html += `<div class="card"><h2>📥 3PL 입고 정보</h2><div class="row2">`;
+    html += `<div class="form-group">` + formGroup('in_pallets', '파렛트 수량', 'number', '예) 2') + `</div>`;
+    html += `<div class="form-group">` + formGroup('in_boxes', '박스 수량', 'number', '예) 10') + `</div>`;
+    html += `</div></div>`;
+  }
+  if (has('3pl_out')) {
+    html += `<div class="card"><h2>📤 3PL 출고 정보</h2><div class="row2">`;
+    html += `<div class="form-group">` + formGroup('out_pallets', '파렛트 출고 수량', 'number', '예) 2') + `</div>`;
+    html += `<div class="form-group">` + formGroup('out_boxes', '박스 출고 수량', 'number', '예) 5') + `</div>`;
+    html += `</div>`;
+    html += formGroup('out_b2c', 'B2C 개별 출고 수량 (있는 경우)', 'number', '예) 20');
+    html += `</div>`;
+  }
+  if (has('3pl_storage')) {
+    html += `<div class="card"><h2>🏭 창고 보관 정보</h2><div class="row2">`;
+    html += `<div class="form-group">` + formGroup('storage_pallets', '보관 파렛트 수량', 'number', '예) 3') + `</div>`;
+    html += `<div class="form-group">` + formGroup('storage_months', '보관 예상 기간 (개월)', 'number', '예) 2') + `</div>`;
+    html += `</div></div>`;
+  }
+  if (has('3pl_label')) {
+    html += `<div class="card"><h2>🏷️ 라벨링 정보</h2>`;
+    html += formGroup('label_count', '라벨 수량', 'number', '예) 500');
+    html += `</div>`;
+  }
+  document.getElementById('cargoSection').innerHTML = html;
+}
+
+function formGroup(id, labelText, type, placeholder) {
+  return `<div class="form-group">
+    <label>${labelText}</label>
+    <input type="${type}" id="${id}" placeholder="${placeholder}" min="0" step="any"/>
+  </div>`;
+}
+
+function getVal(id) {
+  const el = document.getElementById(id);
+  return el ? parseFloat(el.value) || 0 : 0;
+}
+
+function getOceanRate(cbm) {
+  const table = RATES.ocean_korea.table;
+  if (cbm <= 0) return 0;
+  // 가장 가까운 상위 CBM 단계 찾기
+  for (let i = 0; i < table.length; i++) {
+    if (cbm <= table[i][0]) return table[i][1];
+  }
+  // 10CBM 초과 시 마지막 단가 기반 보간
+  const last = table[table.length - 1];
+  const perCbm = last[1] / last[0];
+  return cbm * perCbm;
+}
+
+function calcQuote() {
+  const services = getSelectedServices();
+  if (services.length === 0) {
+    alert('서비스를 1개 이상 선택해 주세요.');
+    return;
+  }
+
+  let rows = [];
+  let totalKRW = 0;
+  let totalUSD = 0;
+
+  if (services.includes('air_korea')) {
+    const kg = getVal('air_weight_korea');
+    if (kg > 0) {
+      const amt = kg * 17000;
+      rows.push({ label: '항공 (한국→LAX)', basis: `${kg} KG`, unit: '₩17,000/KG', amount: `₩${amt.toLocaleString()}`, isKRW: true, val: amt });
+      totalKRW += amt;
+    }
+  }
+  if (services.includes('air_china')) {
+    const kg = getVal('air_weight_china');
+    if (kg > 0) {
+      const amt = kg * 17000;
+      rows.push({ label: '항공 (중국→LAX)', basis: `${kg} KG`, unit: '₩17,000/KG', amount: `₩${amt.toLocaleString()}`, isKRW: true, val: amt });
+      totalKRW += amt;
+    }
+  }
+  if (services.includes('ocean_korea')) {
+    const cbm = getVal('ocean_cbm');
+    if (cbm > 0) {
+      const amt = getOceanRate(cbm);
+      rows.push({ label: '해상 LCL (한국→LAX, DDP)', basis: `${cbm} CBM`, unit: 'CBM 구간 요율', amount: `$${amt.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`, val: amt });
+      totalUSD += amt;
+    }
+  }
+  if (services.includes('3pl_in')) {
+    const pallets = getVal('in_pallets');
+    const boxes = getVal('in_boxes');
+    if (pallets > 0) { const a = pallets * 15; rows.push({ label: '3PL 입고 (파렛트)', basis: `${pallets} 파렛트`, unit: '$15/PALLET', amount: `$${a}`, val: a }); totalUSD += a; }
+    if (boxes > 0)   { const a = boxes * 3; rows.push({ label: '3PL 입고 (박스)', basis: `${boxes} BOX`, unit: '$3/BOX', amount: `$${a}`, val: a }); totalUSD += a; }
+  }
+  if (services.includes('3pl_out')) {
+    const pallets = getVal('out_pallets');
+    const boxes = getVal('out_boxes');
+    const b2c = getVal('out_b2c');
+    if (pallets > 0) { const a = pallets * 15; rows.push({ label: '3PL 출고 (파렛트)', basis: `${pallets} 파렛트`, unit: '$15/PALLET', amount: `$${a}`, val: a }); totalUSD += a; }
+    if (boxes > 0)   { const a = boxes * 3; rows.push({ label: '3PL 출고 (박스)', basis: `${boxes} BOX`, unit: '$3/BOX', amount: `$${a}`, val: a }); totalUSD += a; }
+    if (b2c > 0)     {
+      const a = b2c <= 1 ? 2.5 : 2.5 + (b2c - 1) * 1;
+      rows.push({ label: '3PL B2C 출고', basis: `${b2c} PCS`, unit: '$2.5 (1st) + $1/추가', amount: `$${a.toFixed(2)}`, val: a }); totalUSD += a;
+    }
+  }
+  if (services.includes('3pl_storage')) {
+    const pallets = getVal('storage_pallets');
+    const months = getVal('storage_months');
+    if (pallets > 0 && months > 0) { const a = pallets * months * 40; rows.push({ label: '창고 보관', basis: `${pallets} 파렛트 × ${months}개월`, unit: '$40/PALLET/월', amount: `$${a}`, val: a }); totalUSD += a; }
+  }
+  if (services.includes('3pl_label')) {
+    const count = getVal('label_count');
+    if (count > 0) { const a = count * 0.5; rows.push({ label: '라벨링', basis: `${count}매`, unit: '$0.5/매', amount: `$${a.toFixed(2)}`, val: a }); totalUSD += a; }
+  }
+
+  if (rows.length === 0) {
+    alert('수량을 입력해 주세요.');
+    return;
+  }
+
+  let tbody = '';
+  rows.forEach(r => {
+    tbody += `<tr><td>${r.label}</td><td>${r.basis}</td><td>${r.unit}</td><td><strong>${r.amount}</strong></td></tr>`;
+  });
+  document.getElementById('quoteRows').innerHTML = tbody;
+
+  let totalStr = '';
+  if (totalKRW > 0) totalStr += `₩${totalKRW.toLocaleString()} `;
+  if (totalUSD > 0) totalStr += `$${totalUSD.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+  document.getElementById('quoteTotal').textContent = totalStr || '-';
+
+  const resultEl = document.getElementById('quote-result');
+  resultEl.style.display = 'block';
+  resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+document.getElementById('quoteForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const services = getSelectedServices();
+  if (services.length === 0) { alert('서비스를 1개 이상 선택해 주세요.'); return; }
+
+  const data = {
+    company: document.getElementById('company').value,
+    contact: document.getElementById('contact').value,
+    phone: document.getElementById('phone').value,
+    email: document.getElementById('email').value,
+    services: services.join(', '),
+    hsCode: document.getElementById('hsCode').value,
+    remarks: document.getElementById('remarks').value,
+  };
+
+  // 선택 서비스별 수량 추가
+  const fields = ['air_weight_korea','air_weight_china','ocean_cbm','in_pallets','in_boxes','out_pallets','out_boxes','out_b2c','storage_pallets','storage_months','label_count'];
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.value) data[id] = el.value;
+  });
+
+  try {
+    const res = await fetch('https://formspree.io/f/xjglywvk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('전송 실패');
+  } catch(err) {
+    alert('전송 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+    return;
+  }
+
+  document.getElementById('quoteForm').style.display = 'none';
+  document.getElementById('quote-result').style.display = 'none';
+  document.getElementById('successMsg').style.display = 'block';
+  document.getElementById('successMsg').scrollIntoView({ behavior: 'smooth' });
+});
+</script>
+</body>
+</html>
